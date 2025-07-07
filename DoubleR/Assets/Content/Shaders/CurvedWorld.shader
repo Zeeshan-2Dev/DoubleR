@@ -1,55 +1,80 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-// Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
+﻿// CurvedWorldURP.shader
+Shader "Custom/URP/CurvedWorld (Unlit)"
+{
+    Properties
+    {
+        _Tint       ("Color Tint", Color) = (1,1,1,1)
+        _MainTex    ("Base (RGB)", 2D)    = "white" {}
+        _Curvature  ("Curvature",  Float) = 0.001
+    }
 
-Shader "Custom/CurvedWorld" {
-	Properties {
-		_Tint("Color Tint", Color) = (1,1,1,1)
-		_MainTex("Base (RGB)", 2D) = "white" {}
-		_Curvature("Curvature", Float) = 0.001
-	}
-	SubShader {
-		Tags { "RenderType"="Opaque" }
-		LOD 200
+    SubShader
+    {
+        // Tell Unity this pass is meant for the Universal Render Pipeline
+        Tags{ "RenderPipeline"="UniversalPipeline" "RenderType"="Opaque" }
 
-			CGPROGRAM
-			// Surface shader function is called surf, and vertex preprocessor function is called vert
-			#pragma surface surf Lambert vertex:vert addshadow
-			#pragma target 3.0
+        Pass
+        {
+            // ----------‑– HLSL ‑–----------
+            HLSLPROGRAM
+            #pragma vertex   Vert
+            #pragma fragment Frag
+            #pragma target   3.0       // same as before
 
-			// Access the shaderlab properties
-			uniform sampler2D _MainTex;
-			uniform float _Curvature;
-			fixed4 _Tint;
-		// Basic input structure to the shader function
-		// requires only a single set of UV texture mapping coordinates
-		struct Input {
-			float2 uv_MainTex;
-		};
+            // Core URP include gives us transform helpers
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-		// This is where the curvature is applied
-		void vert(inout appdata_full v)
-		{
-			// Transform the vertex coordinates from model space into world space
-			float4 vv = mul(unity_ObjectToWorld, v.vertex);
+            // ----------‑– Properties ‑–----------
+            TEXTURE2D(_MainTex);            SAMPLER(sampler_MainTex);
+            float4       _MainTex_ST;
+            float4       _Tint;
+            float        _Curvature;
 
-			// Now adjust the coordinates to be relative to the camera position
-			vv.z -= _WorldSpaceCameraPos.z;
+            // ----------‑– Shader I/O ‑–----------
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv         : TEXCOORD0;
+            };
 
-			// Reduce the y coordinate (i.e. lower the "height") of each vertex based
-			// on the square of the distance from the camera in the z axis, multiplied
-			// by the chosen curvature factor
-			vv = float4(0.0f, (vv.z * vv.z) * -_Curvature, 0.0f, 0.0f);
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float2 uv          : TEXCOORD0;
+            };
 
-			// Now apply the offset back to the vertices in model space
-			v.vertex += mul(unity_WorldToObject, vv);
-		}
+            // ----------‑– Vertex – apply curvature ‑–----------
+            Varyings Vert (Attributes v)
+            {
+                Varyings o;
 
-		// This is just a default surface shader
-		void surf(Input IN, inout SurfaceOutput o) {
-			half4 c = tex2D(_MainTex, IN.uv_MainTex)*_Tint;
-			o.Albedo = c.rgb;
-			o.Alpha = c.a;
-		}
-		ENDCG
-		}
+                // Object → world space
+                float3 worldPos = TransformObjectToWorld(v.positionOS.xyz);
+
+                // Distance from camera in world Z
+                float dz = worldPos.z - _WorldSpaceCameraPos.z;
+
+                // Quadratic bend downward (negative Y) by curvature factor
+                worldPos.y += -(dz * dz) * _Curvature;
+
+                // World → homogeneous clip space
+                o.positionHCS = TransformWorldToHClip(worldPos);
+
+                // Standard UV transform macro so tiling/offset still work
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                return o;
+            }
+
+            // ----------‑– Fragment – tint & texture ‑–----------
+            half4 Frag (Varyings i) : SV_Target
+            {
+                half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * _Tint;
+                return col;
+            }
+            ENDHLSL
+        }
+    }
+
+    // FallBack is unnecessary in URP but keeps inspector tidy in Built‑in
+    Fallback Off
 }
