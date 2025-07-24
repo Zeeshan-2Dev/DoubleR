@@ -19,7 +19,7 @@ public class AICARSManager : MonoBehaviour
     private Vector3 previousCarPos = Vector3.zero;
 
     [SerializeField] private PathManager pathManager;
-    
+
     private void Start()
     {
         // initantiate cars
@@ -32,7 +32,7 @@ public class AICARSManager : MonoBehaviour
     }
 
     // Find all the pos to create car
-    List<Vector3>ListCarPosition(GameObject thePath)
+    List<Vector3> ListCarPosition(GameObject thePath)
     {
         List<Vector3> listPathPosition = new List<Vector3>();
 
@@ -44,10 +44,7 @@ public class AICARSManager : MonoBehaviour
         return listPathPosition;
     }
 
-    /// <summary>
-    /// Getting a random car
-    /// </summary>
-    /// <returns></returns>
+    // Getting a random car
     GameObject GetRandomCar()
     {
         GameObject car = unActiveCars.transform.GetChild(UnityEngine.Random.Range(0, unActiveCars.transform.childCount)).gameObject;
@@ -58,22 +55,22 @@ public class AICARSManager : MonoBehaviour
 
     public void CheckAndDisableCarPath()
     {
-        List<Vector3>listCarPos = ListCarPosition(pathManager.pathList[pathManager.listPathIndex]);
+        List<Vector3> listCarPos = ListCarPosition(pathManager.pathList[pathManager.listPathIndex]);
 
         //create a car
-        if(UnityEngine.Random.value <= carFreq)
+        if (UnityEngine.Random.value <= carFreq)
         {
             Vector3 carPos = listCarPos[UnityEngine.Random.Range(0, listCarPos.Count)];
-            while(carPos.x == previousCarPos.x)
+            while (carPos.x == previousCarPos.x)
             {
-                carPos = listCarPos[UnityEngine.Random.Range(0,listCarPos.Count)];
+                carPos = listCarPos[UnityEngine.Random.Range(0, listCarPos.Count)];
             }
             previousCarPos = carPos;
             //random cars
             GameObject car = GetRandomCar();
             car.transform.position = carPos;
 
-            if(UnityEngine.Random.value <= reverseCarFreq)
+            if (UnityEngine.Random.value <= reverseCarFreq)
             {
                 car.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             }
@@ -83,9 +80,9 @@ public class AICARSManager : MonoBehaviour
 
     public void FindCarAndReset()
     {
-        for(int i = 0; i < activeCars.transform.childCount; i++)
+        for (int i = 0; i < activeCars.transform.childCount; i++)
         {
-            if(activeCars.transform.GetChild(i).transform.position.z < pathManager.destroyDistance)
+            if (activeCars.transform.GetChild(i).transform.position.z < pathManager.destroyDistance)
             {
                 GameObject theCar = activeCars.transform.GetChild(i).gameObject;
                 theCar.gameObject.SetActive(false);
@@ -93,5 +90,5 @@ public class AICARSManager : MonoBehaviour
             }
         }
     }
-    
+
 }
