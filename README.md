@@ -1,6 +1,6 @@
 # DoubleR
 Double R or RR - (Rickshaw Rush) is a hyper-causal android game.<br>
-The game features a single level in which the protagonist is tasked with a mission by the agency to eliminate the wheat flour (Gandum) supplier.
+Double R is a mobile endless-runner driving game that reimagines classic lane-based gameplay through a culturally inspired lens. Players control a rickshaw navigating a stylized, cartoony environment, focusing on responsive movement and obstacle avoidance. The project is still under development.
 <br>
 <br>
 Made with Unity3D Engine
